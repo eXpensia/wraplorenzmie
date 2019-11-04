@@ -1,31 +1,62 @@
 import imageio
-import scipy.ndimage.gaussian_filter as gaussain_filter
+from scipy.ndimage import gaussian_filter as gaussian_filter
+import numpy as np
+from tqdm import tqdm
 
 class video_reader(object):
 
-    def __init__(self, filename, codecs = "ffmpeg"):
+    def __init__(self, filename, number = None,background = None, codecs = None):
         self.filename = filename
         self.codecs = codecs
-        self.vid = imageio.get_reader(self.filename,  self.codecs)
-        self.length =  self.vid.get_length()
+        if codecs == None:
+            self.vid = imageio.get_reader(self.filename)
+        else:
+            self.vid = imageio.get_reader(self.filename, codecs)
+        self.number = number
+        self.background = background
 
     def close(self):
         self.vid.close()
 
     def get_image(self,n):
         ''' Get the image n of the movie '''
-        return self.vid.get_data(n)[:,:,1]
+        return np.array(self.vid.get_data(n)[:,:,1])
 
     def get_filtered_image(self,n,sigma):
         ''' Get the image n of the movie and apply a gaussian filter '''
         return gaussian_filter(self.vid.get_data(n)[:,:,1], sigma = sigma)
 
     def get_background(self,n):
-        ''' Compute the background over n images '''
-        image = get_image(1)
-        size = (get_image.shape[0],get_image.shape[1],n)
-        buf = np.empty(size)
-        for i,toc in enumerate(np.arrange(0,self.length, self.length // (n-1))):
-            buf[:,:,i] = get_image(toc)
+        ''' Compute the background over n images spread out on all the movie'''
+        if self.number == None:
+            print("needs to compute length of the movie.")
+            self.get_length()
+            print("length of movie = {}".format(self.number))
 
-        return np.mean(buf, axis=0)
+        image = self.get_image(1)
+        size = (n,image.shape[0],image.shape[1])
+        buf = np.empty(size,dtype=np.uint8)
+        with tqdm(total=n) as pbar:
+            for i,toc in enumerate(np.arange(0,self.number, self.number // (n-1))):
+                buf[i,:,:] = self.get_image(toc)
+                pbar.update(1)
+
+        self.background = np.median(buf, axis=0)
+        return self.background
+
+    def get_length(self):
+        self.number = self.vid.count_frames()
+
+
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+    import time
+    t = time.time()
+    vid = video_reader("/media/maxime/Maxtor/09102019/film75fps1_15k/Basler_acA1920-155um__22392621__20191009_143652597.mp4")
+    vid.number = 156604
+    bg = vid.get_background(100)
+    t = time.time() - t
+    vid.close()
+    print(t)
+    plt.imshow(bg,cmap='gray')
+    plt.show()
