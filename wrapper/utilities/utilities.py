@@ -2,6 +2,11 @@ import imageio
 from scipy.ndimage import gaussian_filter as gaussian_filter
 import numpy as np
 from tqdm import tqdm
+import pylorenzmie.detection.circletransform as ct
+import pylorenzmie.detection.h5video as h5
+import pylorenzmie.detection.localize as localize
+import trackpy as tp
+
 
 class video_reader(object):
 
@@ -46,6 +51,61 @@ class video_reader(object):
 
     def get_length(self):
         self.number = self.vid.count_frames()
+
+
+
+
+def center_find(image,n_fringes=28, trackpy_params={'diameter': 30,
+                                    'minmass': None,
+                                    'topn': None,
+                                    'engine': 'numba'}):
+    '''
+    Courtesy of https://github.com/davidgrier/pylorenzmie/
+    Example wrapper that uses orientational alignment transform (OAT)
+    and trackpy.locate to return features in an image.
+
+    Scheme for using OAT method:
+    1) Use circletransform.py to turn rings into blobs.
+    2) Use trackpy.locate to locate these blobs.
+
+    Keywords:
+        trackpy_params: dictionary of keywords to feed into trackpy.locate.
+                        See trackpy.locate's documentation to learn to use
+                        these to optimize detection. These can be a bit tricky!
+    Returns:
+        features: matrix w/ columns ['xc', 'yc', 'w', 'h'] and rows as a
+                  detection. (xc, yc) is the center of the particle, and
+                  (w, h) = (201, 201) by default.
+        circ: circle_transform of original image for plotting.
+    '''
+    circ = ct.circletransform(image, theory='orientTrans')
+    circ = circ / np.amax(circ)
+    circ = h5.TagArray(circ, frame_no=None)
+    features = tp.locate(circ, **trackpy_params)
+    features['w'] = 201
+    features['h'] = 201
+    features = np.array(features[['x', 'y', 'w', 'h']])
+
+    # Find extent of detected features and change default bounding box.
+    for idx, feature in enumerate(features):
+        xc = feature[0]
+        yc = feature[1]
+        s = localize.feature_extent(norm,
+                                    (xc, yc),
+                                    nfringes = nfringes)
+        features[idx][2] = s
+        features[idx][3] = s
+
+    return features, circ
+
+def plot_bounding(image,features):
+    fig, ax = plt.subplots()
+    ax.imshow(norm, cmap='gray')
+    for feature in features:
+        x, y, w, h = feature
+        test_rect = Rectangle(xy=(x - w/2, y - h/2), width=w,
+                            height=h, fill=False, linewidth=3, edgecolor='r')
+        ax.add_patch(test_rect)
 
 
 if __name__ == "__main__":
