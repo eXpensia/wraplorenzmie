@@ -1,6 +1,7 @@
 import pylorenzmie
 from pylorenzmie.theory import Instrument
 from pylorenzmie.theory.Feature import Feature
+from wrapper.utilities import normalize
 from tqdm import tqdm
 
 
