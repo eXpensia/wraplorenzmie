@@ -128,6 +128,10 @@ def normalize(image, background, dark_count=None):
         return image / backgroud
 
 
+def crop(image, x, y, h):
+    return image[y - h // 2 : y + h // 2, x - h // 2 : x + h // 2]
+
+
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     import time
