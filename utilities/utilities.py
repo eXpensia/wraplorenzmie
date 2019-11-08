@@ -1,23 +1,29 @@
 import imageio
 from scipy.ndimage import gaussian_filter as gaussian_filter
 import numpy as np
-from tqdm import tqdm
 import pylorenzmie.detection.circletransform as ct
 import pylorenzmie.detection.h5video as h5
 import pylorenzmie.detection.localize as localize
 import trackpy as tp
+import time
+from tqdm import tqdm
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
 
 
 class video_reader(object):
     def __init__(self, filename, number=None, background=None, codecs=None):
         self.filename = filename
         self.codecs = codecs
-        if codecs == None:
-            self.vid = imageio.get_reader(self.filename)
-        else:
-            self.vid = imageio.get_reader(self.filename, codecs)
+        self.open_video()
         self.number = number
         self.background = background
+
+    def open_video(self):
+        if self.codecs == None:
+            self.vid = imageio.get_reader(self.filename)
+        else:
+            self.vid = imageio.get_reader(self.filename, self.codecs)
 
     def close(self):
         self.vid.close()
@@ -39,14 +45,13 @@ class video_reader(object):
             print("needs to compute length of the video.")
             self.get_length()
             print("length of video = {}".format(self.number))
-
         image = self.get_image(1)
         size = (n, image.shape[0], image.shape[1])
         buf = np.empty(size, dtype=np.uint8)
-        with tqdm(total=n) as pbar:
-            for i, toc in enumerate(np.arange(0, self.number, self.number // (n - 1))):
-                buf[i, :, :] = self.get_image(toc)
-                pbar.update(1)
+        for i, toc in enumerate(
+            tqdm(np.arange(1, self.number, self.number // (n - 1)))
+        ):
+            buf[i, :, :] = self.get_image(toc)
 
         self.background = np.median(buf, axis=0)
         return self.background
@@ -56,6 +61,8 @@ class video_reader(object):
         so we don't read it again if we already got it"""
         if self.number == None:
             self.number = self.vid.count_frames()
+            self.close()
+            self.open_video()
             return self.number
         else:
             return self.number
@@ -63,8 +70,8 @@ class video_reader(object):
 
 def center_find(
     image,
-    n_fringes=28,
-    trackpy_params={"diameter": 30, "minmass": None, "topn": None, "engine": "numba"},
+    nfringes=28,
+    trackpy_params={"diameter": 51, "minmass": 25.0, "topn": None, "engine": "numba"},
 ):
     """
     Courtesy of https://github.com/davidgrier/pylorenzmie/
@@ -97,7 +104,7 @@ def center_find(
     for idx, feature in enumerate(features):
         xc = feature[0]
         yc = feature[1]
-        s = localize.feature_extent(norm, (xc, yc), nfringes=nfringes)
+        s = localize.feature_extent(image, (xc, yc), nfringes=nfringes)
         features[idx][2] = s
         features[idx][3] = s
 
@@ -106,7 +113,7 @@ def center_find(
 
 def plot_bounding(image, features):
     fig, ax = plt.subplots()
-    ax.imshow(norm, cmap="gray")
+    ax.imshow(image, cmap="gray")
     for feature in features:
         x, y, w, h = feature
         test_rect = Rectangle(
@@ -123,13 +130,13 @@ def plot_bounding(image, features):
 
 def normalize(image, background, dark_count=None):
     if dark_count == None:
-        return (image - dark_count) / (background - dark_count)
+        return image / background
     else:
-        return image / backgroud
+        return (image - dark_count) / (background - dark_count)
 
 
-def crop(image, x, y, h):
-    return image[y - h // 2 : y + h // 2, x - h // 2 : x + h // 2]
+def crop(tocrop, x, y, h):
+    return tocrop[y - h // 2 : y + h // 2, x - h // 2 : x + h // 2]
 
 
 if __name__ == "__main__":
@@ -138,10 +145,9 @@ if __name__ == "__main__":
 
     t = time.time()
     vid = video_reader(
-        "/media/maxime/Maxtor/09102019/film75fps1_15k/Basler_acA1920-155um__22392621__20191009_143652597.mp4"
+        "~/Documents/film0910/Basler_acA1920-155um__22392621__20191009_143652597.mp4"
     )
-    vid.number = 156604
-    bg = vid.get_background(100)
+    bg = vid.get_background(50)
     t = time.time() - t
     vid.close()
     print(t)
