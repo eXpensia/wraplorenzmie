@@ -50,9 +50,9 @@ class fitting(object):
         else:
             self.fitter.vary["a_p"] = False
         if self.fit_n:
-            self.fitter.vary["n_r"] = True
+            self.fitter.vary["n_p"] = True
         else:
-            self.fitter.vary["n_r"] = False
+            self.fitter.vary["n_p"] = False
         if self.fit_alpha:
             self.fitter.vary["alpha"] = True
         else:
@@ -66,6 +66,7 @@ class fitting(object):
         self.fitter = Feature(**self.guesses)
         self.set_vary(self.fitter)
         self.fitter.model.instrument = self.instrument
+        self.fitter.model.instrument.background = np.mean(image)
         self.fitter.model.coordinates = Instrument.coordinates(self.shape)
         self.fitter.data = (image).reshape(image.size)
         return self.fitter.optimize(method=method)
@@ -98,6 +99,8 @@ class fitting(object):
             if i > n_start:
                 image = normalize(vid.get_next_image(), vid.background)
                 image = self._crop_fit(image)
+                image = image / np.mean(image)
+
             self.result = self.fit_single(image, method=method)
             self._globalize_result()
             self.save_result(n)
