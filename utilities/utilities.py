@@ -48,10 +48,16 @@ class video_reader(object):
         image = self.get_image(1)
         size = (n, image.shape[0], image.shape[1])
         buf = np.empty(size, dtype=np.uint8)
-        for i, toc in enumerate(
-            tqdm(np.arange(1, self.number, self.number // (n - 1)))
-        ):
-            buf[i, :, :] = self.get_image(toc)
+        get_image = np.arange(1, self.number, self.number // n)
+        k = 0
+        for i in tqdm(range(self.number)):
+            image = self.get_next_image()
+            if np.isin(i, get_image):
+                buf[k, :, :] = image
+                k = k + 1
+
+        if np.mean(buf[-1, :, :]) == 0:
+            buf = buf[:-1, k, k]
 
         self.background = np.median(buf, axis=0)
         return self.background

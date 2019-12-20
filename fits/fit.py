@@ -27,9 +27,7 @@ class fitting(object):
             background=background,
         )
 
-    def make_guess(
-        self, a_p, n_p, z, alpha=0.8, fit_r=True, fit_n=True, fit_alpha=False
-    ):
+    def make_guess(self, a_p, n_p, z, alpha=1, fit_r=True, fit_n=True, fit_alpha=False):
         """ Add the guess to the object to fit more nicely, z is to be put in
         µm for easier usage, it will be put in pixels in the actual guess dict
         !!! You need to give it an already cropped image."""
@@ -90,16 +88,20 @@ class fitting(object):
 
         image = vid.get_image(1)
         image = normalize(image, vid.background)
+        image = image / np.mean(image)
         image = self._crop_fit(image)
 
         self.fp = np.memmap(
-            savefile, dtype="float32", mode="w+", shape=(int(n_end - n_start), 10)
+            savefile, dtype="float64", mode="w+", shape=(int(n_end - n_start), 10)
         )
         for n, i in enumerate(tqdm(range(n_start, n_end))):
             if i > n_start:
                 image = normalize(vid.get_next_image(), vid.background)
                 image = self._crop_fit(image)
-                image = image / np.mean(image)
+                try:
+                    image = image / np.mean(image)
+                except:
+                    image = image
 
             self.result = self.fit_single(image, method=method)
             self._globalize_result()
