@@ -1,0 +1,10 @@
+former_scripts
+plot
+plots
+.ipynb_checkpoints
+*.pyc
+.idea/
+*.png
+.DS_Store
+*~
+*.txt

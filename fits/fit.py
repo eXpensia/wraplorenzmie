@@ -64,7 +64,10 @@ class fitting(object):
         self.fitter = Feature(**self.guesses)
         self.set_vary(self.fitter)
         self.fitter.model.instrument = self.instrument
-        self.fitter.model.instrument.background = np.mean(image)
+        try:
+            self.fitter.model.instrument.background = np.mean(image)
+        except:
+            self.fitter.model.instrument.background = 1
         self.fitter.model.coordinates = Instrument.coordinates(self.shape)
         self.fitter.data = (image).reshape(image.size)
         return self.fitter.optimize(method=method)
@@ -72,7 +75,7 @@ class fitting(object):
     def update_guess(self, z):
         self.guesses["r_p"][2] = z
 
-    def fit_video(self, xc, yc, vid, savefile, h, n_start=1, n_end=None, method="lm"):
+    def fit_video(self, xc, yc, vid, savefile, h, n_start=1, n_end=None, method="lm", dark_count_mode="min"):
         """Fit a full movie by just using the guesses of the first image
         the guesses for the next image will take the precedent ones.
         Box_size is the fitted square. To initialize correctly the fitter
@@ -87,10 +90,16 @@ class fitting(object):
             print("length of video = {}".format(self.number))
 
         image = vid.get_image(1)
-        image = normalize(image, vid.background)
-        image = image / np.mean(image)
-        image = self._crop_fit(image)
+        _crop_fit = self._crop_fit
+        if dark_count_mode ==  "min":
+            image = normalize(_crop_fit(image), _crop_fit(vid.background), dark_count=np.min(_crop_fit(image)))
+        elif dark_count_mode == "zero":
+            image = normalize(_crop_fit(image), _crop_fit(vid.background), dark_count=0)
+        elif dark_count_mode == "set":
+            image = normalize(_crop_fit(image), _crop_fit(vid.background), dark_count=vid.dark_count)
 
+
+        image = image / np.mean(image)
         self.fp = np.memmap(
             savefile, dtype="float64", mode="w+", shape=(int(n_end - n_start), 10)
         )

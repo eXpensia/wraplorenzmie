@@ -12,12 +12,13 @@ from matplotlib.patches import Rectangle
 
 
 class video_reader(object):
-    def __init__(self, filename, number=None, background=None, codecs=None):
+    def __init__(self, filename, number=None, background=None, dark_count = 0,codecs=None):
         self.filename = filename
         self.codecs = codecs
         self.open_video()
         self.number = number
         self.background = background
+        self.dark_count = 0
 
     def open_video(self):
         if self.codecs == None:
@@ -46,7 +47,7 @@ class video_reader(object):
             self.get_length()
             print("length of video = {}".format(self.number))
         image = self.get_image(1)
-        size = (n, image.shape[0], image.shape[1])
+        size = (n+1, image.shape[0], image.shape[1])
         buf = np.empty(size, dtype=np.uint8)
         get_image = np.arange(1, self.number, self.number // n)
         k = 0
@@ -134,11 +135,8 @@ def plot_bounding(image, features):
     plt.plot()
 
 
-def normalize(image, background, dark_count=None):
-    if dark_count == None:
-        return image / background
-    else:
-        return (image - dark_count) / (background - dark_count)
+def normalize(image, background, dark_count=0):
+    return (image - dark_count) / (background - dark_count)
 
 
 def crop(tocrop, x, y, h):
