@@ -1,15 +1,12 @@
 import imageio
 from scipy.ndimage import gaussian_filter as gaussian_filter
 import numpy as np
-import pylorenzmie.detection.circletransform as ct
-import pylorenzmie.detection.h5video as h5
-import pylorenzmie.detection.localize as localize
 import trackpy as tp
 import time
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
-
+import subprocess
 
 class video_reader(object):
     def __init__(self, filename, number=None, background=None, dark_count = 0,codecs=None):
@@ -48,28 +45,26 @@ class video_reader(object):
             print("length of video = {}".format(self.number))
         image = self.get_image(1)
         size = (n+1, image.shape[0], image.shape[1])
+        print(size)
         buf = np.empty(size, dtype=np.uint8)
         get_image = np.arange(1, self.number, self.number // n)
-        k = 0
-        for i in tqdm(range(self.number)):
-            image = self.get_next_image()
-            if np.isin(i, get_image):
-                buf[k, :, :] = image
-                k = k + 1
+
+        for n, i in enumerate(tqdm(get_image)):
+            image = self.get_image(i)
+            buf[n,:,:] = image
 
         if np.mean(buf[-1, :, :]) == 0:
-            buf = buf[:-1, k, k]
+            buf = buf[:-1, :, :]
 
         self.background = np.median(buf, axis=0)
-        return self.background
+        return buf, self.background
 
     def get_length(self):
         """Read the number of frame of vid, can be long with some format as mp4
         so we don't read it again if we already got it"""
         if self.number == None:
-            self.number = self.vid.count_frames()
-            self.close()
-            self.open_video()
+            cmd = r"ffprobe -v error -select_streams v:0 -count_packets -show_entries stream=nb_read_packets -of csv=p=0 " + self.filename
+            self.number = int(subprocess.check_output(cmd, shell=True)) - 1
             return self.number
         else:
             return self.number
