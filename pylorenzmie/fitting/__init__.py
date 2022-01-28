@@ -1,12 +1,12 @@
-import logging
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+import pylorenzmie.utilities.configuration as config
 
-try:
-    from pylorenzmie.fitting.cython.cminimizers import amoeba
-except Exception as e:
-    print(e)
-    from pylorenzmie.fitting.minimizers import amoeba
+if config.has_catch():
+    from .catchLocalizer import catchLocalizer as Localizer
+    # from .catchEstimator import catchEstimator as Estimator
+else:
+    from .Localizer import Localizer
+from .Estimator import Estimator
+from .Optimizer import Optimizer
 
-all = ['mie_fit.py', 'minimizers.py', amoeba]
+
+__all__ = [Localizer, Estimator, Optimizer]

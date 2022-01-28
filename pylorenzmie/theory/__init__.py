@@ -1,24 +1,17 @@
-import logging
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-try:
-    from pylorenzmie.theory.CudaGeneralizedLorenzMie \
-        import CudaGeneralizedLorenzMie as GeneralizedLorenzMie
-    from pylorenzmie.theory.FastSphere import FastSphere as Sphere
-except Exception as e:
-    logger.info("Could not import CUDA GPU pipeline. "
-                + str(e))
-    try:
-        from pylorenzmie.theory.FastGeneralizedLorenzMie \
-            import FastGeneralizedLorenzMie as GeneralizedLorenzMie
-        from pylorenzmie.theory.FastSphere import FastSphere as Sphere
-    except Exception as e:
-        logger.info(
-            "Could not import numba CPU pipeline. "
-            + str(e))
-        from pylorenzmie.theory.GeneralizedLorenzMie \
-            import GeneralizedLorenzMie
-        from pylorenzmie.theory.Sphere import Sphere
+import sys
 
-all = [GeneralizedLorenzMie, Sphere]
+from .Particle import Particle
+from .Sphere import Sphere
+from .Instrument import Instrument
+
+if 'cupy' in sys.modules:
+    from .LorenzMie import LorenzMie as numpyLorenzMie
+    from .cupyLorenzMie import cupyLorenzMie as LorenzMie
+else:
+    from .LorenzMie import LorenzMie
+    numpyLorenzMie = LorenzMie
+
+from .Aberrations import Aberrations
+from .LMHologram import LMHologram
+
+__all__ = [Particle, Sphere, Instrument, LorenzMie, Aberrations, LMHologram]

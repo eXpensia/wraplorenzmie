@@ -2,16 +2,9 @@
 # -*- coding: utf-8 -*-
 
 '''Make Training Data'''
-import sys
-sys.path.append('/home/lea336/pylorenzmie/')
-sys.path.append('/home/lea336/')
 import json
-try:
-    from pylorenzmie.theory.CudaLMHologram import CudaLMHologram as LMHologram
-except ImportError:
-    from pylorenzmie.theory.LMHologram import LMHologram
-from pylorenzmie.theory.Instrument import coordinates
-from pylorenzmie.theory.Sphere import Sphere
+from pylorenzmie.theory import (LMHologram, Sphere)
+from pylorenzmie.utilities import coordinates
 import numpy as np
 
 import cv2
@@ -19,21 +12,18 @@ import os
 import shutil
 
 
-def feature_extent(sphere, config, nfringes=20, maxrange=300):
+def feature_extent(sphere, instrument, nfringes=20, maxrange=300):
     '''Radius of holographic feature in pixels'''
 
-    h = LMHologram(coordinates=np.arange(maxrange))
-    h.instrument.properties = config['instrument']
+    x = np.arange(0, maxrange)
+    h = LMHologram(coordinates=x, instrument=instrument)
     h.particle.a_p = sphere.a_p
     h.particle.n_p = sphere.n_p
     h.particle.z_p = sphere.z_p
-    # roughly estimate radii of zero crossings
     b = h.hologram() - 1.
     ndx = np.where(np.diff(np.sign(b)))[0] + 1
-    if len(ndx) <= nfringes:
-        return maxrange
-    else:
-        return float(ndx[nfringes])
+    extent = maxrange if (len(ndx) <= nfringes) else float(ndx[nfringes])
+    return extent
 
 
 def format_yolo(sample, config):

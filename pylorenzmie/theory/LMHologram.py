@@ -1,35 +1,25 @@
-#!/usr/bin/env python
-# -*- coding:utf-8 -*-
-
-from pylorenzmie.theory.LorenzMie import LorenzMie
-from pylorenzmie.theory import GeneralizedLorenzMie
+from . import (Aberrations, LorenzMie)
 import numpy as np
-try:
-    import cupy as cp
-    cp.cuda.Device()
-    if 'Cuda' not in str(GeneralizedLorenzMie):
-        raise Exception()
-    from pylorenzmie.theory.cukernels import cuhologram, cuhologramf
-except Exception:
-    cp = None
-try:
-    import numba as nb
-    from pylorenzmie.theory.fastkernels import fasthologram
-except Exception:
-    nb = None
 
 
-class LMHologram(LorenzMie):
-
+class LMHologram(object):
     '''
-    A class that computes in-line holograms of spheres
+    Compute in-line hologram of a sphere
 
     ...
 
-    Attributes
+    Properties
     ----------
-    alpha : float, optional
-        weight of scattered field in superposition
+    alpha : float
+        Relative amplitude of scattered field.
+        Default: 1
+    aberrations : Aberrations
+    lorenzmie : LorenzMie
+    properties : dict
+        Properties that can be accessed and set
+
+    NOTE: Properties of aberrations and lorenzmie can
+    be accessed directly for convenience
 
     Methods
     -------
@@ -39,27 +29,47 @@ class LMHologram(LorenzMie):
 
     def __init__(self,
                  alpha=1.,
-                 *args, **kwargs):
-        super(LMHologram, self).__init__(*args, **kwargs)
-        self.alpha = alpha
+                 **kwargs):
+        super().__setattr__('alpha', alpha)
+        super().__setattr__('aberrations', Aberrations(**kwargs))
+        super().__setattr__('lorenzmie', LorenzMie(**kwargs))
 
-    @property
-    def alpha(self):
-        return self._alpha
+    def __str__(self):
+        fmt = '<{}(alpha={})>'
+        return fmt.format(self.__class__.__name__, self.alpha)
 
-    @alpha.setter
-    def alpha(self, alpha):
-        self._alpha = float(alpha)
+    def __repr__(self):
+        return str(self)
+
+    def __getattr__(self, key):
+        if hasattr(self.lorenzmie, key):
+            return getattr(self.lorenzmie, key)
+        elif hasattr(self.aberrations, key):
+            return getattr(self.aberrations, key)
+
+    def __setattr__(self, key, value):
+        if hasattr(self, key):
+            super().__setattr__(key, value)
+        for component in [self.lorenzmie, self.aberrations]:
+            if hasattr(component, key):
+                setattr(component, key, value)
 
     @property
     def properties(self):
-        p = {}
-        p.update(self.particle.properties)
-        p.update(self.instrument.properties)
-        p.update({'alpha': self.alpha})
+        p = self.lorenzmie.properties
+        p['alpha'] = self.alpha
+        p.update(self.aberrations.properties)
         return p
 
-    def hologram(self, return_gpu=False):
+    @properties.setter
+    def properties(self, properties):
+        for name, value in properties.items():
+            if hasattr(self, name):
+                setattr(self, name, value)
+        self.lorenzmie.properties = properties
+        self.aberrations.properties = properties
+
+    def hologram(self):
         '''Return hologram of sphere
 
         Returns
@@ -67,41 +77,10 @@ class LMHologram(LorenzMie):
         hologram : numpy.ndarray
             Computed hologram.
         '''
-        if self.using_cuda:
-            field = self.field()
-            hologram = self.holo
-            alpha = self._flt(self.alpha)
-            Ex, Ey, Ez = field
-            kernel = cuhologram if self.double_precision else cuhologramf
-            kernel((self.blockspergrid,), (self.threadsperblock,),
-                   (Ex, Ey, Ez, alpha, hologram.size, hologram))
-            if return_gpu is False:
-                hologram = hologram.get()
-        elif self.using_numba:
-            field = self.field()
-            hologram = self.holo
-            fasthologram(field, self.alpha, hologram.size, hologram)
-        else:
-            field = self.alpha * self.field()
-            field[0, :] += 1.
-            hologram = np.sum(np.real(field * np.conj(field)), axis=0)
+        try:
+            field = self.alpha * self.lorenzmie.field()
+        except TypeError:
+            return None
+        field[0, :] += self.aberrations.field()
+        hologram = np.sum(np.real(field * np.conj(field)), axis=0)
         return hologram
-
-
-if __name__ == '__main__':
-    import matplotlib.pyplot as plt
-    from Instrument import coordinates
-    from time import time
-
-    shape = [201, 201]
-    h = LMHologram(coordinates=coordinates(shape))
-    h.particle.r_p = [125, 75, 100]
-    h.particle.a_p = 0.9
-    h.particle.n_p = 1.45
-    h.instrument.wavelength = 0.447
-    h.hologram()
-    start = time()
-    hol = h.hologram()
-    print("Time to calculate {}".format(time() - start))
-    plt.imshow(hol.reshape(shape), cmap='gray')
-    plt.show()

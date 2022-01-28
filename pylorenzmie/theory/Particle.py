@@ -3,7 +3,6 @@
 
 import numpy as np
 import json
-from future.utils import iteritems
 
 
 class Particle(object):
@@ -24,7 +23,7 @@ class Particle(object):
     z_p : float
         z coordinate
     properties : dict
-        dictionary of values to get or set simultaneously
+        dictionary of adjustable properties
 
     Methods
     -------
@@ -32,18 +31,20 @@ class Particle(object):
         Returns the Mie scattering coefficients
     '''
 
-    def __init__(self, r_p=[0, 0, 100]):
+    def __init__(self, r_p=None, **kwargs):
         '''
         Parameters
         ----------
         r_p : list or numpy.ndarray
             [x, y, z] coordinates of the center of the particle.
         '''
-        self.r_p = r_p
+        self.r_p = r_p or [0., 0., 100.]
+
 
     def __str__(self):
-        str = '{}(r_p={})'
-        return str.format(self.__class__.__name__, self.r_p)
+        fmt = '<{}(r_p={})>'
+        r_p = ['{:.2f}'.format(c) for c in self.r_p]
+        return fmt.format(self.__class__.__name__, r_p)
 
     def __repr__(self):
         return self.__str__()
@@ -83,14 +84,14 @@ class Particle(object):
 
     @property
     def properties(self):
-        p = {'x_p': self.x_p,
-             'y_p': self.y_p,
-             'z_p': self.z_p}
-        return p
+        properties = dict(x_p=self.x_p,
+                          y_p=self.y_p,
+                          z_p=self.z_p)
+        return properties
 
     @properties.setter
     def properties(self, properties):
-        for (name, value) in iteritems(properties):
+        for name, value in properties.items():
             if hasattr(self, name):
                 setattr(self, name, value)
 
@@ -118,7 +119,7 @@ class Particle(object):
         '''
         self.properties = json.loads(str)
 
-    def ab(self, n_m=1. + 0.j, wavelength=0.):
+    def ab(self, n_m=1.+0.j, wavelength=0.):
         '''Returns the Mie scattering coefficients
 
         Subclasses of Particle should override this
@@ -136,10 +137,10 @@ class Particle(object):
         ab : numpy.ndarray
             Mie AB scattering coefficients
         '''
-        return np.asarray([1, 1], dtype=np.complex)
+        return np.asarray([1, 1], dtype=complex)
 
 
-if __name__ == '__main__':
+if __name__ == '__main__': # pragma: no cover
     p = Particle()
     print(p.r_p)
     p.x_p = 100.

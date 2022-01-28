@@ -3,30 +3,13 @@
 
 import numpy as np
 import json
-from future.utils import iteritems
 import logging
 logging.basicConfig()
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
-
-
-def coordinates(shape, corner=None):
-    '''Return coordinate system for Lorenz-Mie microscopy images'''
-    (ny, nx) = shape
-    if corner is None:
-        (left, top) = (0, 0)
-    else:
-        (left, top) = corner
-    x = np.arange(left, nx + left)
-    y = np.arange(top, ny + top)
-    xv, yv = np.meshgrid(x, y)
-    xv = xv.flatten()
-    yv = yv.flatten()
-    return np.stack((xv, yv))
+logger.setLevel(logging.WARNING)
 
 
 class Instrument(object):
-
     '''
     Abstraction of an in-line holographic microscope
 
@@ -35,7 +18,7 @@ class Instrument(object):
 
     ...
 
-    Attributes
+    Properties
     ----------
     wavelength : float
         Vacuum wavelength of light [um]
@@ -45,8 +28,12 @@ class Instrument(object):
         Refractive index of medium
     background : float or numpy.ndarray
         Background image
+    noise : float
+        Estimated noise as a percentage of the mean value
     dark_count : float
         Dark count of camera
+    properties : dict
+        Adjustable properties of the instrument model
 
     Methods
     -------
@@ -59,19 +46,25 @@ class Instrument(object):
                  magnification=0.135,
                  n_m=1.335,
                  background=1.,
-                 dark_count=0.):
+                 noise=0.05,
+                 dark_count=0.,
+                 **kwargs):
         self.wavelength = wavelength
         self.magnification = magnification
         self.n_m = n_m
+        self.noise = noise
         self.dark_count = dark_count
         self.background = background
 
     def __str__(self):
-        str = '{}(wavelength={}, magnification={}, n_m={})'
-        return str.format(self.__class__.__name__,
+        fmt = '<{}(wavelength={}, magnification={}, n_m={})>'
+        return fmt.format(self.__class__.__name__,
                           self.wavelength,
                           self.magnification,
                           self.n_m)
+
+    def __repr__(self):
+        return self.__str__()
 
     @property
     def wavelength(self):
@@ -124,16 +117,16 @@ class Instrument(object):
 
     @property
     def properties(self):
-        props = {'n_m': self.n_m,
-                 'wavelength': self.wavelength,
-                 'magnification': self.magnification}
+        props = dict(n_m=self.n_m,
+                     wavelength=self.wavelength,
+                     magnification=self.magnification)
         return props
 
     @properties.setter
     def properties(self, properties):
-        for (name, value) in iteritems(properties):
-            if hasattr(self, name):
-                setattr(self, name, value)
+        for property, value in properties.items():
+            if hasattr(self, property):
+                setattr(self, property, value)
 
     def dumps(self, **kwargs):
         '''Returns JSON string of adjustable properties
@@ -184,6 +177,6 @@ class Instrument(object):
         return k
 
 
-if __name__ == '__main__':
+if __name__ == '__main__': # pragma: no cover
     a = Instrument()
     print(a.wavelength, a.magnification)
