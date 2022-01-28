@@ -70,48 +70,6 @@ class video_reader(object):
             return self.number
 
 
-def center_find(
-    image,
-    nfringes=28,
-    trackpy_params={"diameter": 51, "minmass": 25.0, "topn": None, "engine": "numba"},
-):
-    """
-    Courtesy of https://github.com/davidgrier/pylorenzmie/
-    Example wrapper that uses orientational alignment transform (OAT)
-    and trackpy.locate to return features in an image.
-
-    Scheme for using OAT method:
-    1) Use circletransform.py to turn rings into blobs.
-    2) Use trackpy.locate to locate these blobs.
-
-    Keywords:
-        trackpy_params: dictionary of keywords to feed into trackpy.locate.
-                        See trackpy.locate's documentation to learn to use
-                        these to optimize detection. These can be a bit tricky!
-    Returns:
-        features: matrix w/ columns ['xc', 'yc', 'w', 'h'] and rows as a
-                  detection. (xc, yc) is the center of the particle, and
-                  (w, h) = (201, 201) by default.
-        circ: circle_transform of original image for plotting.
-    """
-    circ = ct.circletransform(image, theory="orientTrans")
-    circ = circ / np.amax(circ)
-    circ = h5.TagArray(circ, frame_no=None)
-    features = tp.locate(circ, **trackpy_params)
-    features["w"] = 201
-    features["h"] = 201
-    features = np.array(features[["x", "y", "w", "h"]])
-
-    # Find extent of detected features and change default bounding box.
-    for idx, feature in enumerate(features):
-        xc = feature[0]
-        yc = feature[1]
-        s = localize.feature_extent(image, (xc, yc), nfringes=nfringes)
-        features[idx][2] = s
-        features[idx][3] = s
-
-    return features, circ
-
 
 def plot_bounding(image, features):
     fig, ax = plt.subplots()
