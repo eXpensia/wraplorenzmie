@@ -84,7 +84,7 @@ def plot_bounding(image, features):
     fig, ax = plt.subplots()
     ax.imshow(image, cmap="gray")
     for feature in features:
-        x, y, w, h = feature
+        x, y, w, h = [feature['x_p'], feature['y_p'],*feature["bbox"][1:]]
         test_rect = Rectangle(
             xy=(x - w / 2, y - h / 2),
             width=w,
