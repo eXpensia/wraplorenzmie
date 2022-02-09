@@ -91,6 +91,7 @@ class fitting(object):
         a_p,
         n_p,
         z,
+        r_p = None,
         alpha=1,
         show_estimate=False,
     ):
@@ -104,7 +105,10 @@ class fitting(object):
         # self.feature.properties.update(self.aberrations.properties)
 
         p = self.feature.particle
-        p.r_p = [self.shape[0] // 2, self.shape[1] // 2, z / self.ins.magnification]
+        if r_p == None:
+            p.r_p = [self.shape[0] // 2, self.shape[1] // 2, z / self.ins.magnification]
+        else:
+            p.r_p = [r_p[0], r_p[1], z / self.ins.magnification]
         p.a_p = a_p
         p.n_p = n_p
 
