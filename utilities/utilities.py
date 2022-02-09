@@ -1,18 +1,19 @@
 import imageio
 from scipy.ndimage import gaussian_filter as gaussian_filter
 import numpy as np
-import pylorenzmie.detection.circletransform as ct
-import pylorenzmie.detection.h5video as h5
-import pylorenzmie.detection.localize as localize
 import trackpy as tp
 import time
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
+import subprocess
+from pylorenzmie.fitting.Localizer import Localizer
 
 
 class video_reader(object):
-    def __init__(self, filename, number=None, background=None, dark_count = 0,codecs=None):
+    def __init__(
+        self, filename, number=None, background=None, dark_count=0, codecs=None
+    ):
         self.filename = filename
         self.codecs = codecs
         self.open_video()
@@ -30,99 +31,60 @@ class video_reader(object):
         self.vid.close()
 
     def get_image(self, n):
-        """ Get the image n of the movie """
+        """Get the image n of the movie"""
         return np.array(self.vid.get_data(n)[:, :, 1])
 
     def get_next_image(self):
         return np.array(self.vid.get_next_data()[:, :, 1])
 
     def get_filtered_image(self, n, sigma):
-        """ Get the image n of the movie and apply a gaussian filter """
+        """Get the image n of the movie and apply a gaussian filter"""
         return gaussian_filter(self.vid.get_data(n)[:, :, 1], sigma=sigma)
 
     def get_background(self, n):
-        """ Compute the background over n images spread out on all the movie"""
+        """Compute the background over n images spread out on all the movie"""
         if self.number == None:
             print("needs to compute length of the video.")
             self.get_length()
             print("length of video = {}".format(self.number))
         image = self.get_image(1)
-        size = (n+1, image.shape[0], image.shape[1])
+        size = (n + 1, image.shape[0], image.shape[1])
+        print(size)
         buf = np.empty(size, dtype=np.uint8)
         get_image = np.arange(1, self.number, self.number // n)
-        k = 0
-        for i in tqdm(range(self.number)):
-            image = self.get_next_image()
-            if np.isin(i, get_image):
-                buf[k, :, :] = image
-                k = k + 1
+
+        for n, i in enumerate(tqdm(get_image)):
+            image = self.get_image(i)
+            buf[n, :, :] = image
 
         if np.mean(buf[-1, :, :]) == 0:
-            buf = buf[:-1, k, k]
+            buf = buf[:-1, :, :]
 
         self.background = np.median(buf, axis=0)
-        return self.background
+        return buf, self.background
 
     def get_length(self):
         """Read the number of frame of vid, can be long with some format as mp4
         so we don't read it again if we already got it"""
         if self.number == None:
-            self.number = self.vid.count_frames()
-            self.close()
-            self.open_video()
+            cmd = (
+                r"ffprobe -v error -select_streams v:0 -count_packets -show_entries stream=nb_read_packets -of csv=p=0 "
+                + self.filename
+            )
+            self.number = int(subprocess.check_output(cmd, shell=True)) - 1
             return self.number
         else:
             return self.number
 
 
-def center_find(
-    image,
-    nfringes=28,
-    trackpy_params={"diameter": 51, "minmass": 25.0, "topn": None, "engine": "numba"},
-):
-    """
-    Courtesy of https://github.com/davidgrier/pylorenzmie/
-    Example wrapper that uses orientational alignment transform (OAT)
-    and trackpy.locate to return features in an image.
-
-    Scheme for using OAT method:
-    1) Use circletransform.py to turn rings into blobs.
-    2) Use trackpy.locate to locate these blobs.
-
-    Keywords:
-        trackpy_params: dictionary of keywords to feed into trackpy.locate.
-                        See trackpy.locate's documentation to learn to use
-                        these to optimize detection. These can be a bit tricky!
-    Returns:
-        features: matrix w/ columns ['xc', 'yc', 'w', 'h'] and rows as a
-                  detection. (xc, yc) is the center of the particle, and
-                  (w, h) = (201, 201) by default.
-        circ: circle_transform of original image for plotting.
-    """
-    circ = ct.circletransform(image, theory="orientTrans")
-    circ = circ / np.amax(circ)
-    circ = h5.TagArray(circ, frame_no=None)
-    features = tp.locate(circ, **trackpy_params)
-    features["w"] = 201
-    features["h"] = 201
-    features = np.array(features[["x", "y", "w", "h"]])
-
-    # Find extent of detected features and change default bounding box.
-    for idx, feature in enumerate(features):
-        xc = feature[0]
-        yc = feature[1]
-        s = localize.feature_extent(image, (xc, yc), nfringes=nfringes)
-        features[idx][2] = s
-        features[idx][3] = s
-
-    return features, circ
-
-
 def plot_bounding(image, features):
+    """
+    Method to plot a squares around detected features.
+    """
     fig, ax = plt.subplots()
     ax.imshow(image, cmap="gray")
     for feature in features:
-        x, y, w, h = feature
+        x, y, w, h = [feature['x_p'], feature['y_p'],*feature["bbox"][1:]]
         test_rect = Rectangle(
             xy=(x - w / 2, y - h / 2),
             width=w,
@@ -136,6 +98,7 @@ def plot_bounding(image, features):
 
 
 def normalize(image, background, dark_count=0):
+    "Normalize the image by the background, tacking into account the darkcount."
     return (image - dark_count) / (background - dark_count)
 
 
@@ -143,7 +106,21 @@ def crop(tocrop, x, y, h):
     return tocrop[y - h // 2 : y + h // 2, x - h // 2 : x + h // 2]
 
 
+def center_find(image, tp_opts=None, nfringes=None, maxrange=None):
+    """
+    Using the Localizer method of Pylorenzmie to localize images in
+    holograms.
+    """
+    Loc = Localizer(tp_opts=None, nfringes=None, maxrange=None)
+    prediction = Loc.detect(image)
+
+    return prediction
+
+
 if __name__ == "__main__":
+    """
+    TO DO : Unit testing.
+    """
     import matplotlib.pyplot as plt
     import time
 
