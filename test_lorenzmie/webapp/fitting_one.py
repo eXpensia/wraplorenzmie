@@ -14,7 +14,7 @@ from PIL import Image
 st.header("Fitting one image")
 
 
-img_file = st.sidebar.file_uploader(label="Upload a file", type=["png", "jpg"])
+img_file = st.sidebar.file_uploader(label="Upload a file", type=["png", "jpg", "tiff"])
 
 realtime_update = True
 if img_file:
@@ -26,6 +26,8 @@ if img_file:
         img, realtime_update=realtime_update, box_color="#0000FF", aspect_ratio=(1, 1)
     )
 
+if not img_file:
+    st.stop()
     # Manipulate cropped image at will
     # st.write("Preview")
     # _ = cropped_img.thumbnail((150,150))
