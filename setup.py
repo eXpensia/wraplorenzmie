@@ -11,7 +11,7 @@ setup(
         'ipympl==0.9.2',
         'jupyterlab==3.4.8',
         'matplotlib==3.6.1',
-        'numpy==1.23.4',
+        'numpy==1.22.0',
         'scipy==1.9.2',
         'seaborn==0.11',
         'tqdm==4.64.1',
