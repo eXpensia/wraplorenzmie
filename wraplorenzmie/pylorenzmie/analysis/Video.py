@@ -13,38 +13,38 @@ from .utilities.running_normal import running_normalize
 class Video(object):
 
     '''
-    Abstraction of an experimental video. 
+    Abstraction of an experimental video.
     ...
     Attributes
     ----------
     frames : list
-        list of the video's Frames.   
+        list of the video's Frames.
     framenumbers : list
         list of the each Frame's corresponding framenumber
      **Note: frames and framenumbers are stored as a dict as {framenumber: frame}, but the getters each return a list
-    
+
     trajectories : DataFrame
         DataFrame containing information about each feature's properties, framenumber, and trajectory (if set)
     path : string
         path leading to a base directory with data related to this particular experiment.
-    video_path : string               
-        path leading to the .avi video file for this particular experiment. 
+    video_path : string
+        path leading to the .avi video file for this particular experiment.
          ** Note: If the path is already given, the video_path can be determined using setDefaultPath(); and vice versa. (See below)
  ###        ** Note: If the path+framenumbers are already given, the individual image_paths can be determined using setDefaultImagePaths(); and vice versa. (See below)
-    
+
         ** Note: video_path does not have a setter - both path and video_path are determined by the path setter.
           If the path setter gets a filename (i.e. vid.path='folder/myexp.avi' or vid.path='folder/videos/myexp.avi') then
               it sets the video_path, and the path is set to the directory 'folder/myexp'
           If the path setter gets a directory (i.e. vid.path='folder/myexp') then it sets the path and checks for a
               corresponding video ('folder/myexp.avi' or 'folder/videos/myexp.avi') and sets the video_path (if file is found).
-              
+
     fps : float
         camera frames/second
     instrument : Instrument
         Instrument instance used for prediction
-   
+
     Methods
-    ------- 
+    -------
     set_frames(frames=None, framenumbers=None)
         frames : list of Frames  |  framenumbers : list of integers
         Set the video's frames. Ensures each frame has a framenumber.
@@ -61,21 +61,21 @@ class Video(object):
         Sort the list of frames by framenumber
     clear:
         Clear current frames
-        
+
     set_trajectories(link=True, **kwargs)
         Set trajectories by looping over Frames and Features and storing Feature properties into a DataFrame.
         if Link=True, link the trajectories using trackpy and any relevant trackpy **kwargs.
     clear_trajectories()
         Set trajectories to an empty DataFrame
-        
+
     serialize(save=False, path='', traj_path=None, omit=[], omit_frame=[], omit_feat=[])
         Convert Video object into a dict containing frames (dict to serialized frames), fps, and video_path.
          - If save=True, save to 'self.path/path' (or 'self.path/path/video.json' if path doesn't end in '.json')
-         
+
     deserialize(info):
         Read information from dict into Video
     '''
-    
+
     def __init__(self, frames={}, path=None, instrument=None, fps=30, info=None):
         self._frames = {}
         self.fps = fps
@@ -95,33 +95,33 @@ class Video(object):
     @instrument.setter
     def instrument(self, instrument):
         self._instrument = instrument
-        
+
     @property
     def fps(self):
         return self._fps
 
     @fps.setter
     def fps(self, fps):
-        self._fps = float(fps)    
-        
+        self._fps = float(fps)
+
     @property
     def frames(self):
         return list(self._frames.values())
-    
+
     @property
     def framenumbers(self):
         return list(self._frames.keys())
 
     @property
     def trajectories(self):
-        return self._trajectories 
+        return self._trajectories
 
     def get_frame(self, framenumber):
         return self._frames[framenumber]
 
     def get_frames(self, framenumbers):
         return [self.get_frame(fnum) for fnum in framenumbers]
-    
+
     def set_frame(self, frame=None, framenumber=None):
         if frame is None:
             frame=Frame(framenumber=framenumber, path=self.path)
@@ -135,9 +135,9 @@ class Video(object):
             if self.instrument is not None:
                 frame.instrument = self.instrument
         return frame
-    
+
     def set_frames(self, frames=None, framenumbers=None):
-        if frames is None and framenumbers is None: 
+        if frames is None and framenumbers is None:
             if self.path is not None:
                 print('Setting frames using contents of path {}/norm_images:'.format(self.path))
                 self.set_frames(frames=[Frame(path=self.path + '/norm_images/' + s) for s in os.listdir(self.path + '/norm_images')])
@@ -145,14 +145,14 @@ class Video(object):
                 return
         elif isinstance(frames, dict):
              self._frames.update(frames)
-             
+
         elif framenumbers is None:
             framenumbers = [None for frame in frames]
         elif frames is None:
             frames = [Frame(path=self.path) for fnum in framenumbers]
         for i in range(len(frames)):
             self.set_frame(frames[i], framenumbers[i])
-                           
+
     def add(self, frames):
         print('Adding {} frames to the end of video...'.format(len(frames)))
         if len(self.frames) > 0:
@@ -160,24 +160,24 @@ class Video(object):
         else:
             nframes = 0
         self.set_frames( frames=frames, framenumbers = list(range(nframes, nframes+len(frames))) )
-    
+
     def remove(self, framenumbers):
         for framenumber in framenumbers:
             if framenumber in self.framenumbers:
                 del self._frames[framenumber]
-                
+
     def sort(self):
-        self._frames = dict(sorted(self._frames.items(), key=lambda x: x[0]))        
-            
+        self._frames = dict(sorted(self._frames.items(), key=lambda x: x[0]))
+
     def clear(self):
         self._frames = {}
-                      
+
     def setDefaultPath(self, path=None, viddir='videos/'):
         if path is None:
             path = self.path or self.video_path
         if not isinstance(path, str):
             return
-        
+
         if len(path) >= 4 and path[-4:] == '.avi':
             self.video_path = path
             #self.bg_path = self.video_path.replace(self.video_path.split('/')[-1], 'background.avi') #don't do this
@@ -213,7 +213,7 @@ class Video(object):
             df = tp.link_df(df, search_range, **kwargs)
             df = df.rename(columns={'x':'x_p', 'y':'y_p', 'frame':'framenumber'})
         self._trajectories = df
-     
+
     def clear_trajectories(self):
         self._trajectories = pd.DataFrame()
 
@@ -231,13 +231,13 @@ class Video(object):
                 order = 2
             normalize_video(self.bg_path, self.video_path, save_folder = save_folder, order = order)
         self.set_frames()
-            
+
     def serialize(self, save=False, framenumbers=None, path=None, traj_path=None,
                   omit=[], omit_frame=[], omit_feat=[]):
         info={}
         if traj_path is not None:
             self.trajectories.to_csv(traj_path)
-            info['trajectories'] = traj_path    
+            info['trajectories'] = traj_path
         if 'frames' not in omit:
             framenumbers = framenumbers or self.framenumbers
             frames = [self._frames[key].serialize(omit=omit_frame, omit_feat=omit_feat) for key in framenumbers]
@@ -282,5 +282,3 @@ class Video(object):
         if 'video_path' in info.keys():
             if info['video_path'] is not None:
                 self.video_path = info['video_path']
-       
-            

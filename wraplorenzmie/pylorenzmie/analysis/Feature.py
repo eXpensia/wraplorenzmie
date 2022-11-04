@@ -4,9 +4,9 @@
 import json
 import os
 import numpy as np
-from pylorenzmie.fitting import (Estimator, Optimizer)
-from pylorenzmie.theory import (Sphere, LMHologram)
-from pylorenzmie.utilities import coordinates
+from ..fitting import (Estimator, Optimizer)
+from ..theory import (Sphere, LMHologram)
+from ..utilities import coordinates
 from .Mask import Mask
 
 
@@ -57,7 +57,7 @@ class Feature(object):
         self.optimizer = Optimizer(model=self.model, **kwargs)
         self.optimizer.fixed = fixed or [*self.optimizer.fixed,
                                          *self.model.aberrations.properties]
-        
+
     @property
     def data(self):
         '''Values of the (normalized) data at each pixel'''
@@ -94,7 +94,7 @@ class Feature(object):
     @property
     def model(self):
         return self._model
-    
+
     @model.setter
     def model(self, model):
         self._model = model
@@ -103,7 +103,7 @@ class Feature(object):
         properties = self.estimator.predict(self)
         self.particle.properties = properties
         return properties
-            
+
     def optimize(self):
         mask = self.mask.selected
         opt = self.optimizer
@@ -144,7 +144,7 @@ if __name__ == '__main__': # pragma: no cover
 
     # Pixel coordinates
     a.coordinates = coordinates(data.shape)
-    
+
     # Initial estimates for particle properties
     p = a.model.particle
     p.r_p = [data.shape[0]//2, data.shape[1]//2, 330.]

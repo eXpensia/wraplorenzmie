@@ -7,7 +7,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 import subprocess
-from pylorenzmie.fitting.Localizer import Localizer
+from wraplorenzmie.pylorenzmie.fitting.Localizer import Localizer
 
 
 class video_reader(object):

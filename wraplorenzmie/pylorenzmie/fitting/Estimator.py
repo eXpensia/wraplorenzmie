@@ -1,5 +1,5 @@
 import numpy as np
-from pylorenzmie.utilities import aziavg
+from wraplorenzmie.pylorenzmie.utilities import aziavg
 from scipy.signal import (savgol_filter, argrelmin)
 from scipy.stats import sigmaclip
 from scipy.special import jn_zeros
@@ -7,7 +7,7 @@ from scipy.special import jn_zeros
 
 class Estimator(object):
     '''Estimate parameters of a holographic feature
-    
+
     Properties
     ----------
     z_p : float
@@ -64,7 +64,7 @@ class Estimator(object):
         a = self.profile
         rho = np.arange(len(a)) + 0.5
         lap = savgol_filter(a, 11, 3, 2) + savgol_filter(a, 11, 3, 1)/rho
-    
+
         good = np.abs(a) > self.noise
         qsq = -lap[good] / a[good] / self.k**2
         rho = rho[good]
@@ -74,13 +74,13 @@ class Estimator(object):
         qsq = qsq[good]
 
         zsq = rho**2 * (1./qsq - 1.)
-    
+
         return np.sqrt(np.mean(sigmaclip(zsq).clipped))
 
     def _estimate_a(self, z_p):
         '''Estimate radius of particle
 
-        Model interference pattern as spherical wave 
+        Model interference pattern as spherical wave
         eminating from z_p and interfering with a plane wave.
         '''
         if not self._initialized:
@@ -90,7 +90,7 @@ class Estimator(object):
         alpha_n = np.sqrt((z_p/minima)**2 + 1.)
         a_p = np.median(jn_zeros(1, len(alpha_n)) * alpha_n) / self.k
         return 2. * instrument.magnification * a_p
-    
+
     def predict(self, feature=None):
         if feature is not None:
             self._initialize(feature)

@@ -4,14 +4,14 @@
 from .Particle import Particle
 import numpy as np
 
-import pylorenzmie.utilities.configuration as config
+import wraplorenzmie.pylorenzmie.utilities.configuration as config
 
 if config.has_numba():
     from numba import njit
 else: # pragma: no cover
-    from pylorenzmie.utilities.numba import njit
+    from wraplorenzmie.pylorenzmie.utilities.numba import njit
 
-    
+
 class Sphere(Particle):
 
     '''
@@ -35,7 +35,7 @@ class Sphere(Particle):
     -------
     ab(n_m, wavelength) : numpy.ndarray
         returns the Mie scattering coefficients for the sphere
-        
+
     References
     ----------
     1. Adapted from Chapter 8 in

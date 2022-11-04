@@ -3,7 +3,11 @@ import sys
 from .Particle import Particle
 from .Sphere import Sphere
 from .Instrument import Instrument
-
+try:
+    import cupy
+except:
+    pass
+    
 if 'cupy' in sys.modules:
     from .LorenzMie import LorenzMie as numpyLorenzMie
     from .cupyLorenzMie import cupyLorenzMie as LorenzMie

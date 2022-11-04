@@ -1,6 +1,6 @@
 import sys
 
-sys.path.append(r"C:\Users\m.lavaud\Documents\Ma_these")
+#sys.path.append(r"C:\Users\m.lavaud\Documents\Ma_these")
 import streamlit as st
 import imageio
 import matplotlib.pyplot as plt
@@ -8,7 +8,7 @@ import numpy as np
 import wraplorenzmie.utilities.utilities as utilities
 from streamlit_cropper import st_cropper
 import wraplorenzmie.fits.fit as fit
-from pylorenzmie.utilities import azistd
+from wraplorenzmie.pylorenzmie.utilities import azistd
 from PIL import Image
 
 st.header("Fitting one image")

@@ -7,12 +7,12 @@ from .Sphere import Sphere
 from .Instrument import Instrument
 import json
 
-from pylorenzmie.utilities import configuration as config
+from wraplorenzmie.pylorenzmie.utilities import configuration as config
 
 if config.has_numba():
     from numba import njit
 else: # pragma: no cover
-    from pylorenzmie.utilities.numba import njit
+    from wraplorenzmie.pylorenzmie.utilities.numba import njit
 
 import logging
 logger = logging.getLogger(__name__)
@@ -87,7 +87,7 @@ class LorenzMie(object):
     '''
 
     method = 'numpy'
-    
+
     def __init__(self,
                  coordinates=None,
                  particle=None,
@@ -117,7 +117,7 @@ class LorenzMie(object):
 
     def __repr__(self):
         return self.__str__()
-    
+
     @property
     def coordinates(self):
         '''Three-dimensional coordinates at which field is calculated
@@ -278,8 +278,8 @@ class LorenzMie(object):
         shape = kx.shape
 
         # 2. geometric factors
-        krho = np.hypot(kx, ky) 
-        kr = np.hypot(krho, kz) 
+        krho = np.hypot(kx, ky)
+        kr = np.hypot(krho, kz)
 
         phi = np.arctan2(ky, kx)
         cosphi = np.cos(phi)

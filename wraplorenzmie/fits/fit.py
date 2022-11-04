@@ -1,15 +1,15 @@
-import pylorenzmie
-from pylorenzmie.theory import Instrument
+import wraplorenzmie.pylorenzmie
+from wraplorenzmie.pylorenzmie.theory import Instrument
 from wraplorenzmie.utilities.utilities import normalize
 from wraplorenzmie.utilities.utilities import crop
 from tqdm import tqdm
 import numpy as np
 import matplotlib.pyplot as plt
 
-from pylorenzmie.analysis import Feature
-from pylorenzmie.theory import LMHologram
-from pylorenzmie.utilities import coordinates
-from pylorenzmie.utilities import azistd
+from wraplorenzmie.pylorenzmie.analysis import Feature
+from wraplorenzmie.pylorenzmie.theory import LMHologram
+from wraplorenzmie.pylorenzmie.utilities import coordinates
+from wraplorenzmie.pylorenzmie.utilities import azistd
 import matplotlib as mpl
 
 mpl.rcParams["xtick.direction"] = "in"
