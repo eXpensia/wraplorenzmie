@@ -1,0 +1,18 @@
+[project]
+name = "wraplorenzmie"
+version = "1.0.0"
+authors = [
+  { name="Maxime Lavaud", email="lavaudmaxime.ml@gmail.com" },
+]
+description = "A package to easely fit movies using pylorenzmie."
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/eXpensia/wraplorenzmie"
+"Bug Tracker" = "https://github.com/eXpensia/wraplorenzmie/issues"
