@@ -123,7 +123,7 @@ class Localizer(object):
 
         # Orientational order parameter:
         # psi(r) = |\partial_x a + i \partial_y a|^2
-        psi = np.empty_like(image, dtype=np.complex)
+        psi = np.empty_like(image, dtype=complex)
         psi.real = savgol_filter(image, 13, 3, 1, axis=1)
         psi.imag = savgol_filter(image, 13, 3, 1, axis=0)
         psi *= psi
