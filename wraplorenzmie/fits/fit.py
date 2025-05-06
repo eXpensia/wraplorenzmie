@@ -286,7 +286,7 @@ class fitting(object):
             savefile,
             dtype="float64",
             mode="w+",
-            shape=(int(n_end - n_start), len(self.feature.optimizer.variables)),
+            shape=(int(n_end - n_start), len(self.feature.optimizer.variables) * 2 + 3),
         )
         for n, i in enumerate(tqdm(range(n_start, n_end))):
             if i > n_start:
@@ -324,7 +324,8 @@ class fitting(object):
 
     def save_result(self, n):
         buf = np.array([])
-        for i in self.result[self.feature.optimizer.variables]:
+        variables_to_save = self.feature.optimizer.variables + ['d' + x for x in self.feature.optimizer.variables] + ['success', 'npix', 'redchi']
+        for i in self.result[variables_to_save]:
             buf = np.append(buf, i)
         self.fp[n, :] = buf
 
