@@ -17,6 +17,7 @@ Si vous souhaitez utiliser l'accélération CUDA pour un traitement plus rapide,
 ## Utilisation
 
 Une fois installé, vous pouvez utiliser ce package pour ajuster des films d'images holographiques en utilisant les fonctionnalités de **pylorenzmie**. 
+Un exemple de code est disponible à tuto/track.ipynb.
 
 
 ## WebApp
