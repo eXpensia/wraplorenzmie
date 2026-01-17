@@ -9,7 +9,7 @@ setup(
     long_description_content_type='text/markdown',
     install_requires=[
         'ipympl==0.9.2',
-        'jupyterlab==3.4.8',
+        'jupyterlab==4.4.8',
         'matplotlib==3.6.1',
         'numpy==1.23.4',
         'scipy==1.9.2',
